@@ -1,118 +1,185 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import Image from "next/image";
+import { Inter, Orbitron } from "next/font/google";
+import React, { useEffect, useState } from "react";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin-ext"] });
+const orbitron = Orbitron({ weight: "400", subsets: ["latin"] });
 
 export default function Home() {
+  const [input, setInput] = useState<string[]>([]);
+  const [currentInput, setCurrentInput] = useState(0);
+  const [operator, setOperator] = useState<string[]>([]);
+  const [result, setResult] = useState("");
+  const [operation, setOperation] = useState<string[]>([]);
+
+  const buttons = [
+    {
+      className: "bg-slate-500",
+      text: "/",
+      id: "divide",
+      handleClick: handleClickOperator,
+    },
+    {
+      className: "bg-slate-500",
+      text: "x",
+      id: "multiply",
+      handleClick: handleClickOperator,
+    },
+    { className: "bg-slate-600", text: "7", id: "seven" },
+    { className: "bg-slate-600", text: "8", id: "eight" },
+    { className: "bg-slate-600", text: "9", id: "nine" },
+    {
+      className: "bg-slate-500",
+      text: "-",
+      id: "subtract",
+      handleClick: handleClickOperator,
+    },
+    { className: "bg-slate-600", text: "4", id: "four" },
+    { className: "bg-slate-600", text: "5", id: "five" },
+    { className: "bg-slate-600", text: "6", id: "six" },
+    {
+      className: "bg-slate-500",
+      text: "+",
+      id: "add",
+      handleClick: handleClickOperator,
+    },
+    { className: "bg-slate-600", text: "1", id: "one" },
+    { className: "bg-slate-600", text: "2", id: "two" },
+    { className: "bg-slate-600", text: "3", id: "three" },
+    {
+      className: "row-span-2 bg-sky-900",
+      text: "=",
+      id: "equals",
+      handleClick: handleResult,
+    },
+    { className: "col-span-2 bg-slate-600", text: "0", id: "zero" },
+    {
+      className: "bg-slate-600",
+      text: ".",
+      id: "decimal",
+      handleClick: handleClickDecimal,
+    },
+  ] as {
+    className: string;
+    text: string;
+    id: string;
+    handleClick?: () => any;
+  }[];
+
+  useEffect(() => {
+    console.log(input);
+    console.log(operator);
+    const newoperation = [];
+    for (let i = 0; i < input.length; i++) {
+      if (input[i]) newoperation.push(input[i]);
+      if (operator[i]) newoperation.push(operator[i]);
+    }
+    setOperation(newoperation);
+  }, [input, operator]);
+
+  useEffect(() => {
+    setResult(input[currentInput]);
+  }, [input]);
+
+  useEffect(() => {
+    setResult(operator[currentInput - 1]);
+  }, [operator]);
+
+  const handleAC = () => {
+    setInput([]);
+    setOperator([]);
+    setCurrentInput(0);
+    setResult("0");
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    console.log(input[currentInput]);
+    const { name } = e.target as HTMLButtonElement;
+    if (!input[currentInput]) setInput([...input, name]);
+    else if (input[currentInput] === "0")
+      setInput([...input.slice(0, -1), name]);
+    else setInput([...input.slice(0, -1), input[currentInput] + name]);
+  };
+
+  function handleClickOperator(e: React.MouseEvent) {
+    const { name } = e.target as HTMLButtonElement;
+    console.log(operator[currentInput]);
+    if (operator[currentInput] && operator[currentInput] != "-")
+      setOperator([...operator.slice(0, -1), name]);
+    else {
+      setOperator([...operator, name]);
+      setCurrentInput(input.length);
+    }
+  }
+
+  function handleClickDecimal() {
+    console.log("decimal");
+    if (input[currentInput].includes(".")) return;
+    else setInput([...input.slice(0, -1), input[currentInput] + "."]);
+  }
+
+  function handleResult() {
+    const calInput = input.map((num) => parseFloat(num));
+    const calOperator = operator.map((op) => op);
+    calOperator.forEach((op, i) => {
+      if (op === "x") {
+        calInput[i] = calInput[i] * calInput[i + 1];
+        calInput.splice(i + 1, 1);
+        calOperator.splice(i, 1);
+      } else if (op === "/") {
+        calInput[i] = calInput[i] / calInput[i + 1];
+        calInput.splice(i + 1, 1);
+        calOperator.splice(i, 1);
+      }
+    });
+    calOperator.forEach((op, i) => {
+      if (op === "+") {
+        calInput[i] = calInput[i] + calInput[i + 1];
+        calInput.splice(i + 1, 1);
+        calOperator.splice(i, 1);
+      } else if (op === "-") {
+        calInput[i] = calInput[i] - calInput[i + 1];
+        calInput.splice(i + 1, 1);
+        calOperator.splice(i, 1);
+      }
+    });
+    setResult(calInput[0].toString());
+  }
+
   return (
     <main
       className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
     >
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div className="grid h-96 grid-cols-4 grid-rows-6 gap-0.5 bg-slate-800 p-1 md:w-72">
+        <div className="col-span-4 flex flex-col">
+          <div
+            className={`${orbitron.className} basis-1/2 text-end text-2xl`}
+            id=""
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            {operation}
+          </div>
+          <div
+            className={`${orbitron.className} basis-1/2 text-end text-2xl text-green-300`}
+            id="display"
+          >
+            {result || "0"}
+          </div>
         </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+        <button className="col-span-2 bg-red-700" id="clear" onClick={handleAC}>
+          AC
+        </button>
+        {buttons.map((button) => (
+          <button
+            className={`${button.className}`}
+            id={button.id}
+            name={button.text}
+            key={button.id}
+            onClick={button.handleClick || handleClick}
+          >
+            {button.text}
+          </button>
+        ))}
       </div>
     </main>
-  )
+  );
 }
