@@ -7,10 +7,12 @@ const orbitron = Orbitron({ weight: "400", subsets: ["latin"] });
 
 export default function Home() {
   const [input, setInput] = useState<string[]>([]);
-  const [currentInput, setCurrentInput] = useState(0);
+  const currentInput = input.length - 1;
   const [operator, setOperator] = useState<string[]>([]);
   const [result, setResult] = useState("");
+  const [display, setDisplay] = useState("");
   const [operation, setOperation] = useState<string[]>([]);
+  const [isFinished, setIsFinished] = useState(false);
 
   const buttons = [
     {
@@ -78,23 +80,36 @@ export default function Home() {
   }, [input, operator]);
 
   useEffect(() => {
-    setResult(input[currentInput]);
+    setDisplay(input[currentInput]);
   }, [input]);
 
   useEffect(() => {
-    setResult(operator[currentInput - 1]);
+    setDisplay(operator[currentInput]);
   }, [operator]);
+
+  useEffect(() => {
+    setDisplay(result);
+  }, [result]);
+
+  useEffect(() => {
+    if (isFinished) {
+      setOperation(operation.concat("=" + result));
+    }
+  }, [isFinished]);
 
   const handleAC = () => {
     setInput([]);
     setOperator([]);
-    setCurrentInput(0);
-    setResult("0");
+    setDisplay("");
+    setIsFinished(false);
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    console.log(input[currentInput]);
     const { name } = e.target as HTMLButtonElement;
+    if (operator[currentInput]) {
+      setInput([...input, name]);
+      return;
+    }
     if (!input[currentInput]) setInput([...input, name]);
     else if (input[currentInput] === "0")
       setInput([...input.slice(0, -1), name]);
@@ -103,12 +118,27 @@ export default function Home() {
 
   function handleClickOperator(e: React.MouseEvent) {
     const { name } = e.target as HTMLButtonElement;
-    console.log(operator[currentInput]);
-    if (operator[currentInput] && operator[currentInput] != "-")
+    if (isFinished === true) {
+      setIsFinished(false);
+      setInput([result]);
+      setOperator([name]);
+      return;
+    }
+    if (input[currentInput] === "-" && name !== "-") {
+      setInput([...input.slice(0, -1)]);
       setOperator([...operator.slice(0, -1), name]);
-    else {
+      return;
+    }
+    if (operator[currentInput] && name !== "-")
+      setOperator([...operator.slice(0, -1), name]);
+    else if (
+      operator[currentInput] &&
+      name === "-" &&
+      input[currentInput] !== "-"
+    ) {
+      setInput([...input, "-"]);
+    } else if (input[currentInput]) {
       setOperator([...operator, name]);
-      setCurrentInput(input.length);
     }
   }
 
@@ -119,41 +149,50 @@ export default function Home() {
   }
 
   function handleResult() {
+    console.log(...operation);
+    if (isFinished) return;
+    if (!input[currentInput]) return;
     const calInput = input.map((num) => parseFloat(num));
     const calOperator = operator.map((op) => op);
-    calOperator.forEach((op, i) => {
-      if (op === "x") {
+    for (let i = 0; i < calOperator.length; i++) {
+      if (calOperator[i] === "x") {
         calInput[i] = calInput[i] * calInput[i + 1];
         calInput.splice(i + 1, 1);
         calOperator.splice(i, 1);
-      } else if (op === "/") {
+        i--;
+      } else if (calOperator[i] === "/") {
         calInput[i] = calInput[i] / calInput[i + 1];
+        console.log(calInput[i]);
         calInput.splice(i + 1, 1);
         calOperator.splice(i, 1);
+        i--;
       }
-    });
-    calOperator.forEach((op, i) => {
-      if (op === "+") {
+    }
+    for (let i = 0; i < calOperator.length; i++) {
+      if (calOperator[i] === "+") {
         calInput[i] = calInput[i] + calInput[i + 1];
         calInput.splice(i + 1, 1);
         calOperator.splice(i, 1);
-      } else if (op === "-") {
+        i--;
+      } else if (calOperator[i] === "-") {
         calInput[i] = calInput[i] - calInput[i + 1];
         calInput.splice(i + 1, 1);
         calOperator.splice(i, 1);
+        i--;
       }
-    });
-    setResult(calInput[0].toString());
+    }
+    setResult((Math.round(calInput[0] * 100000000) / 100000000).toString());
+    setIsFinished(true);
   }
 
   return (
     <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
+      className={`flex h-screen flex-col items-center justify-between p-24 ${inter.className}`}
     >
-      <div className="grid h-96 grid-cols-4 grid-rows-6 gap-0.5 bg-slate-800 p-1 md:w-72">
+      <div className="grid h-full w-screen grid-cols-4 grid-rows-6 gap-0.5 bg-slate-800 p-1 md:h-96 md:w-72">
         <div className="col-span-4 flex flex-col">
           <div
-            className={`${orbitron.className} basis-1/2 text-end text-2xl`}
+            className={`${orbitron.className} basis-1/2 text-end text-xl`}
             id=""
           >
             {operation}
@@ -162,7 +201,7 @@ export default function Home() {
             className={`${orbitron.className} basis-1/2 text-end text-2xl text-green-300`}
             id="display"
           >
-            {result || "0"}
+            {display || "0"}
           </div>
         </div>
         <button className="col-span-2 bg-red-700" id="clear" onClick={handleAC}>
